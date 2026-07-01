@@ -312,8 +312,7 @@ function handlePlateClick(event) {
   if (tile.parentElement?.classList.contains("plate-slot")) {
     els.plateBank.append(tile);
   } else {
-    const slot = [...els.plateSlots.querySelectorAll(".plate-slot")]
-      .find((item) => !item.querySelector(".plate-tile"));
+    const slot = firstEmptyPlateSlot();
     if (slot) slot.append(tile);
   }
   updatePlateSlots();
@@ -331,6 +330,8 @@ function startPlateDrag(event) {
     originNext: tile.nextSibling,
     offsetX: event.clientX - rect.left,
     offsetY: event.clientY - rect.top,
+    startX: event.clientX,
+    startY: event.clientY,
     pointerId: event.pointerId,
     moved: false
   };
@@ -360,7 +361,10 @@ function startPlateDrag(event) {
 
 function movePlateDrag(event) {
   if (!dragState || event.pointerId !== dragState.pointerId) return;
-  dragState.moved = true;
+  if (Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY) > 6) {
+    dragState.moved = true;
+  }
+  if (!dragState.moved) return;
   const { tile, offsetX, offsetY } = dragState;
   tile.style.left = `${event.clientX - offsetX}px`;
   tile.style.top = `${event.clientY - offsetY}px`;
@@ -372,6 +376,26 @@ function endPlateDrag(event) {
   const state = dragState;
   clearPlateDragListeners();
   clearPlateDragStyles(state.tile);
+
+  if (!state.moved) {
+    if (state.originParent?.classList.contains("plate-slot")) {
+      els.plateBank.append(state.tile);
+    } else {
+      const slot = firstEmptyPlateSlot();
+      if (slot) {
+        placeTileInSlot(state.tile, slot, state.originParent);
+      } else {
+        returnPlateTile(state.tile, state.originParent, state.originNext);
+      }
+    }
+    state.tile.dataset.skipClick = "true";
+    window.setTimeout(() => {
+      state.tile.dataset.skipClick = "false";
+    }, 0);
+    dragState = null;
+    updatePlateSlots();
+    return;
+  }
 
   const slot = findDropSlot(event.clientX, event.clientY);
   const bank = isPointInsideElement(event.clientX, event.clientY, els.plateBank);
@@ -447,6 +471,11 @@ function placeTileInSlot(tile, slot, originParent) {
     }
   }
   slot.append(tile);
+}
+
+function firstEmptyPlateSlot() {
+  return [...els.plateSlots.querySelectorAll(".plate-slot")]
+    .find((slot) => !slot.querySelector(".plate-tile"));
 }
 
 function findDropSlot(x, y) {

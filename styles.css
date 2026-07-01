@@ -421,6 +421,13 @@ select:focus {
   user-select: none;
 }
 
+.plate-tile.plate-given {
+  background: var(--green);
+  border-color: var(--green);
+  box-shadow: none;
+  cursor: default;
+}
+
 .quiz-actions {
   display: grid;
   grid-template-columns: 1fr 1fr 48px;

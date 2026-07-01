@@ -344,7 +344,7 @@ function renderQuestion() {
   currentDirection = settings.direction === "mix"
     ? (Math.random() > 0.5 ? "en-ja" : "ja-en")
     : settings.direction;
-  if (settings.mode === "plates") {
+  if (isPlateMode()) {
     currentDirection = "ja-en";
   }
 
@@ -373,7 +373,7 @@ function renderAnswerMode() {
   els.typingArea.hidden = !isTypingMode;
   els.initialHint.hidden = settings.mode !== "initial";
   els.choiceArea.hidden = settings.mode !== "choice";
-  els.plateArea.hidden = settings.mode !== "plates";
+  els.plateArea.hidden = !isPlateMode();
   els.choiceArea.innerHTML = "";
   els.plateSlots.innerHTML = "";
   els.plateBank.innerHTML = "";
@@ -384,7 +384,7 @@ function renderAnswerMode() {
     els.initialText.textContent = firstVisibleCharacter(expectedAnswer());
   }
 
-  if (settings.mode === "plates") {
+  if (isPlateMode()) {
     renderPlateMode();
     return;
   }
@@ -439,7 +439,21 @@ function renderPlateMode() {
     els.plateSlots.append(slot);
   });
 
-  shuffle(letters.map((char, index) => ({ char, index }))).forEach((letter) => {
+  if (settings.mode === "initial-plates" && letters.length > 0) {
+    const givenTile = document.createElement("button");
+    givenTile.type = "button";
+    givenTile.className = "plate-tile plate-given";
+    givenTile.textContent = letters[0];
+    givenTile.dataset.char = letters[0];
+    givenTile.disabled = true;
+    els.plateSlots.querySelector(".plate-slot")?.append(givenTile);
+  }
+
+  const playableLetters = letters
+    .map((char, index) => ({ char, index }))
+    .filter((letter) => settings.mode !== "initial-plates" || letter.index > 0);
+
+  shuffle(playableLetters).forEach((letter) => {
     const tile = document.createElement("button");
     tile.type = "button";
     tile.className = "plate-tile";
@@ -461,10 +475,14 @@ function hidePlateBank() {
 }
 
 function revealPlateBank() {
-  if (settings.mode !== "plates") return;
+  if (!isPlateMode()) return;
   els.plateRevealBtn.hidden = true;
   els.plateRevealBtn.setAttribute("aria-expanded", "true");
   els.plateBank.hidden = false;
+}
+
+function isPlateMode() {
+  return settings.mode === "plates" || settings.mode === "initial-plates";
 }
 
 function plateTargetWord() {
@@ -531,7 +549,7 @@ function handleCheckOrNext() {
     nextQuestion();
     return;
   }
-  const answer = settings.mode === "plates" ? plateAnswer() : els.answerInput.value;
+  const answer = isPlateMode() ? plateAnswer() : els.answerInput.value;
   const correct = isCorrect(answer);
   finishAnswer(correct);
 }

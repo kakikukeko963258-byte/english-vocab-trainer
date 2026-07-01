@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>英日・日英トレーナー</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="vocab.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Vocabulary Drill</p>
+          <h1>英日・日英トレーナー</h1>
+        </div>
+        <dl class="score-strip" aria-label="学習状況">
+          <div>
+            <dt>単語</dt>
+            <dd id="totalCount">0</dd>
+          </div>
+          <div>
+            <dt>正答率</dt>
+            <dd id="accuracy">0%</dd>
+          </div>
+          <div>
+            <dt>定着</dt>
+            <dd id="masteredCount">0</dd>
+          </div>
+        </dl>
+      </header>
+
+      <section class="workspace" aria-label="単語練習">
+        <aside class="panel control-panel" aria-label="設定">
+          <div class="control-block">
+            <span class="control-label">方向</span>
+            <div class="segmented" role="group" aria-label="出題方向">
+              <button type="button" data-direction="en-ja" class="is-active">英→日</button>
+              <button type="button" data-direction="ja-en">日→英</button>
+              <button type="button" data-direction="mix">混合</button>
+            </div>
+          </div>
+
+          <label class="field">
+            <span>形式</span>
+            <select id="modeSelect">
+              <option value="type">入力</option>
+              <option value="choice">4択</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>範囲</span>
+            <select id="scopeSelect">
+              <option value="all">すべて</option>
+              <option value="weak">苦手</option>
+              <option value="not-mastered">未定着</option>
+              <option value="starred">スター</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>グループ</span>
+            <select id="groupSelect">
+              <option value="all">すべて</option>
+            </select>
+          </label>
+
+          <div class="button-grid">
+            <button type="button" id="restartBtn" class="secondary">↻ 再出題</button>
+            <button type="button" id="resetStatsBtn" class="secondary">× 記録削除</button>
+          </div>
+        </aside>
+
+        <section class="quiz-panel" aria-live="polite">
+          <div class="quiz-meta">
+            <span id="groupTag" class="tag">-</span>
+            <span id="cardCounter" class="counter">0 / 0</span>
+          </div>
+
+          <div class="prompt-wrap">
+            <span id="promptLabel" class="prompt-label">英語</span>
+            <div id="promptText" class="prompt-text">-</div>
+          </div>
+
+          <div id="typingArea" class="answer-area">
+            <input id="answerInput" type="text" autocomplete="off" spellcheck="false">
+          </div>
+
+          <div id="choiceArea" class="choice-area" hidden></div>
+
+          <div class="quiz-actions">
+            <button type="button" id="checkBtn" class="primary">判定</button>
+            <button type="button" id="revealBtn" class="secondary">答え</button>
+            <button type="button" id="starBtn" class="icon-button" aria-label="スター">☆</button>
+          </div>
+
+          <section id="feedback" class="feedback" hidden>
+            <div id="feedbackTitle" class="feedback-title"></div>
+            <div id="answerLine" class="answer-line"></div>
+            <div id="noteLine" class="note-line"></div>
+          </section>
+        </section>
+
+        <aside class="panel list-panel" aria-label="単語一覧">
+          <label class="field search-field">
+            <span>検索</span>
+            <input id="searchInput" type="search" autocomplete="off">
+          </label>
+          <div id="wordList" class="word-list"></div>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

@@ -303,8 +303,11 @@ function populateGroups() {
 }
 
 function applySettingsToControls() {
+  const plateMode = isPlateMode();
+  const activeDirection = plateMode ? "ja-en" : settings.direction;
   els.directionButtons.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.direction === settings.direction);
+    button.disabled = plateMode;
+    button.classList.toggle("is-active", button.dataset.direction === activeDirection);
   });
   els.modeButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.mode === settings.mode);
@@ -371,6 +374,7 @@ function renderQuestion() {
 function renderAnswerMode() {
   const isTypingMode = settings.mode === "type" || settings.mode === "initial";
   els.typingArea.hidden = !isTypingMode;
+  els.answerInput.disabled = !isTypingMode;
   els.initialHint.hidden = settings.mode !== "initial";
   els.choiceArea.hidden = settings.mode !== "choice";
   els.plateArea.hidden = !isPlateMode();

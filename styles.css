@@ -156,8 +156,21 @@ h1 {
   background: var(--blue);
 }
 
+.segmented button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.segmented button.is-active:disabled {
+  opacity: 1;
+}
+
 .mode-segmented {
   grid-template-columns: repeat(2, 1fr);
+}
+
+.mode-segmented button[data-mode="initial-plates"] {
+  grid-column: 1 / -1;
 }
 
 .field {

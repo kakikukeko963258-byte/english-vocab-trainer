@@ -370,6 +370,15 @@ select:focus {
   border: 1px dashed #aebcb9;
 }
 
+.plate-reveal {
+  min-height: 58px;
+  color: var(--blue-dark);
+  background: #e9f1ff;
+  border: 1px solid #c9ddff;
+  border-radius: 8px;
+  font-weight: 900;
+}
+
 .plate-bank {
   justify-content: flex-start;
   align-content: flex-start;

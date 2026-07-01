@@ -19,6 +19,7 @@ const els = {
   choiceArea: document.querySelector("#choiceArea"),
   plateArea: document.querySelector("#plateArea"),
   plateSlots: document.querySelector("#plateSlots"),
+  plateRevealBtn: document.querySelector("#plateRevealBtn"),
   plateBank: document.querySelector("#plateBank"),
   checkBtn: document.querySelector("#checkBtn"),
   revealBtn: document.querySelector("#revealBtn"),
@@ -273,6 +274,7 @@ function bindEvents() {
 
   els.checkBtn.addEventListener("click", handleCheckOrNext);
   els.revealBtn.addEventListener("click", () => revealAnswer(true));
+  els.plateRevealBtn.addEventListener("click", revealPlateBank);
 
   els.starBtn.addEventListener("click", () => {
     const card = currentCard();
@@ -375,6 +377,8 @@ function renderAnswerMode() {
   els.choiceArea.innerHTML = "";
   els.plateSlots.innerHTML = "";
   els.plateBank.innerHTML = "";
+  els.plateRevealBtn.hidden = true;
+  els.plateBank.hidden = true;
 
   if (settings.mode === "initial") {
     els.initialText.textContent = firstVisibleCharacter(expectedAnswer());
@@ -447,6 +451,20 @@ function renderPlateMode() {
   });
 
   updatePlateSlots();
+  hidePlateBank();
+}
+
+function hidePlateBank() {
+  els.plateRevealBtn.hidden = false;
+  els.plateRevealBtn.setAttribute("aria-expanded", "false");
+  els.plateBank.hidden = true;
+}
+
+function revealPlateBank() {
+  if (settings.mode !== "plates") return;
+  els.plateRevealBtn.hidden = true;
+  els.plateRevealBtn.setAttribute("aria-expanded", "true");
+  els.plateBank.hidden = false;
 }
 
 function plateTargetWord() {

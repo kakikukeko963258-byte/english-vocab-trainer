@@ -42,13 +42,13 @@
             </div>
           </div>
 
-          <label class="field">
-            <span>形式</span>
-            <select id="modeSelect">
-              <option value="type">入力</option>
-              <option value="choice">4択</option>
-            </select>
-          </label>
+          <div class="control-block">
+            <span class="control-label">形式</span>
+            <div class="segmented mode-segmented" role="group" aria-label="出題形式">
+              <button type="button" data-mode="type" class="is-active">入力</button>
+              <button type="button" data-mode="choice">4択</button>
+            </div>
+          </div>
 
           <label class="field">
             <span>範囲</span>

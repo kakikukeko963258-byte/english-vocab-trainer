@@ -3,7 +3,7 @@ const els = {
   accuracy: document.querySelector("#accuracy"),
   masteredCount: document.querySelector("#masteredCount"),
   directionButtons: [...document.querySelectorAll("[data-direction]")],
-  modeSelect: document.querySelector("#modeSelect"),
+  modeButtons: [...document.querySelectorAll("[data-mode]")],
   scopeSelect: document.querySelector("#scopeSelect"),
   groupSelect: document.querySelector("#groupSelect"),
   restartBtn: document.querySelector("#restartBtn"),
@@ -64,10 +64,13 @@ function bindEvents() {
     });
   });
 
-  els.modeSelect.addEventListener("change", () => {
-    settings.mode = els.modeSelect.value;
-    saveState();
-    rebuildDeck();
+  els.modeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      settings.mode = button.dataset.mode;
+      saveState();
+      applySettingsToControls();
+      rebuildDeck();
+    });
   });
 
   els.scopeSelect.addEventListener("change", () => {
@@ -135,7 +138,9 @@ function applySettingsToControls() {
   els.directionButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.direction === settings.direction);
   });
-  els.modeSelect.value = settings.mode;
+  els.modeButtons.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.mode === settings.mode);
+  });
   els.scopeSelect.value = settings.scope;
   els.groupSelect.value = settings.group;
 }

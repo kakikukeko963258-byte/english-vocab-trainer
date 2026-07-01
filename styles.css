@@ -152,6 +152,10 @@ h1 {
   background: var(--blue);
 }
 
+.mode-segmented {
+  grid-template-columns: repeat(2, 1fr);
+}
+
 .field {
   display: block;
   margin-bottom: 14px;

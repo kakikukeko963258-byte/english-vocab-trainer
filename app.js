@@ -47,7 +47,6 @@ let deck = [];
 let deckIndex = 0;
 let currentDirection = "en-ja";
 let answered = false;
-let dragState = null;
 
 init();
 
@@ -282,7 +281,6 @@ function renderPlateMode() {
     tile.textContent = letter.char;
     tile.dataset.char = letter.char;
     tile.dataset.tileId = `${currentCard().id}-${letter.index}-${letter.char}`;
-    tile.addEventListener("pointerdown", startPlateDrag);
     tile.addEventListener("click", handlePlateClick);
     els.plateBank.append(tile);
   });
@@ -304,171 +302,21 @@ function plateAnswer() {
 
 function handlePlateClick(event) {
   const tile = event.currentTarget;
-  if (answered || tile.dataset.skipClick === "true") {
-    tile.dataset.skipClick = "false";
-    return;
-  }
+  if (answered) return;
 
   if (tile.parentElement?.classList.contains("plate-slot")) {
     els.plateBank.append(tile);
   } else {
     const slot = firstEmptyPlateSlot();
-    if (slot) slot.append(tile);
+    if (slot) placeTileInSlot(tile, slot);
   }
   updatePlateSlots();
 }
 
-function startPlateDrag(event) {
-  if (answered || event.button > 0) return;
-  event.preventDefault();
-
-  const tile = event.currentTarget;
-  const rect = tile.getBoundingClientRect();
-  dragState = {
-    tile,
-    originParent: tile.parentElement,
-    originNext: tile.nextSibling,
-    offsetX: event.clientX - rect.left,
-    offsetY: event.clientY - rect.top,
-    startX: event.clientX,
-    startY: event.clientY,
-    pointerId: event.pointerId,
-    moved: false
-  };
-
-  tile.classList.add("is-dragging");
-  tile.style.width = `${rect.width}px`;
-  tile.style.height = `${rect.height}px`;
-  tile.style.position = "fixed";
-  tile.style.left = `${rect.left}px`;
-  tile.style.top = `${rect.top}px`;
-  tile.style.zIndex = "1000";
-  tile.style.pointerEvents = "none";
-  document.body.append(tile);
-
-  if (tile.setPointerCapture) {
-    try {
-      tile.setPointerCapture(event.pointerId);
-    } catch {
-      // Some mobile browsers release capture when the element is reparented.
-    }
-  }
-
-  window.addEventListener("pointermove", movePlateDrag);
-  window.addEventListener("pointerup", endPlateDrag);
-  window.addEventListener("pointercancel", cancelPlateDrag);
-}
-
-function movePlateDrag(event) {
-  if (!dragState || event.pointerId !== dragState.pointerId) return;
-  if (Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY) > 6) {
-    dragState.moved = true;
-  }
-  if (!dragState.moved) return;
-  const { tile, offsetX, offsetY } = dragState;
-  tile.style.left = `${event.clientX - offsetX}px`;
-  tile.style.top = `${event.clientY - offsetY}px`;
-  highlightPlateSlot(event.clientX, event.clientY);
-}
-
-function endPlateDrag(event) {
-  if (!dragState || event.pointerId !== dragState.pointerId) return;
-  const state = dragState;
-  clearPlateDragListeners();
-  clearPlateDragStyles(state.tile);
-
-  if (!state.moved) {
-    if (state.originParent?.classList.contains("plate-slot")) {
-      els.plateBank.append(state.tile);
-    } else {
-      const slot = firstEmptyPlateSlot();
-      if (slot) {
-        placeTileInSlot(state.tile, slot, state.originParent);
-      } else {
-        returnPlateTile(state.tile, state.originParent, state.originNext);
-      }
-    }
-    state.tile.dataset.skipClick = "true";
-    window.setTimeout(() => {
-      state.tile.dataset.skipClick = "false";
-    }, 0);
-    dragState = null;
-    updatePlateSlots();
-    return;
-  }
-
-  const slot = findDropSlot(event.clientX, event.clientY);
-  const bank = isPointInsideElement(event.clientX, event.clientY, els.plateBank);
-
-  if (slot) {
-    placeTileInSlot(state.tile, slot, state.originParent);
-  } else if (bank) {
-    els.plateBank.append(state.tile);
-  } else {
-    returnPlateTile(state.tile, state.originParent, state.originNext);
-  }
-
-  if (state.moved) {
-    state.tile.dataset.skipClick = "true";
-    window.setTimeout(() => {
-      state.tile.dataset.skipClick = "false";
-    }, 0);
-  }
-
-  dragState = null;
-  updatePlateSlots();
-}
-
-function cancelPlateDrag() {
-  if (!dragState) return;
-  const state = dragState;
-  clearPlateDragListeners();
-  clearPlateDragStyles(state.tile);
-  returnPlateTile(state.tile, state.originParent, state.originNext);
-  dragState = null;
-  updatePlateSlots();
-}
-
-function clearPlateDragListeners() {
-  window.removeEventListener("pointermove", movePlateDrag);
-  window.removeEventListener("pointerup", endPlateDrag);
-  window.removeEventListener("pointercancel", cancelPlateDrag);
-  [...els.plateSlots.querySelectorAll(".plate-slot")].forEach((slot) => {
-    slot.classList.remove("is-target");
-  });
-}
-
-function clearPlateDragStyles(tile) {
-  tile.classList.remove("is-dragging");
-  tile.style.width = "";
-  tile.style.height = "";
-  tile.style.position = "";
-  tile.style.left = "";
-  tile.style.top = "";
-  tile.style.zIndex = "";
-  tile.style.pointerEvents = "";
-}
-
-function returnPlateTile(tile, parent, next) {
-  if (!parent) {
-    els.plateBank.append(tile);
-    return;
-  }
-  if (next && next.parentElement === parent) {
-    parent.insertBefore(tile, next);
-  } else {
-    parent.append(tile);
-  }
-}
-
-function placeTileInSlot(tile, slot, originParent) {
+function placeTileInSlot(tile, slot) {
   const currentTile = slot.querySelector(".plate-tile");
   if (currentTile && currentTile !== tile) {
-    if (originParent?.classList.contains("plate-slot") && originParent !== slot) {
-      originParent.append(currentTile);
-    } else {
-      els.plateBank.append(currentTile);
-    }
+    els.plateBank.append(currentTile);
   }
   slot.append(tile);
 }
@@ -476,38 +324,6 @@ function placeTileInSlot(tile, slot, originParent) {
 function firstEmptyPlateSlot() {
   return [...els.plateSlots.querySelectorAll(".plate-slot")]
     .find((slot) => !slot.querySelector(".plate-tile"));
-}
-
-function findDropSlot(x, y) {
-  const directSlot = document.elementsFromPoint(x, y)
-    .find((element) => element.classList?.contains("plate-slot"));
-  if (directSlot) return directSlot;
-
-  let nearest = null;
-  let nearestDistance = Infinity;
-  [...els.plateSlots.querySelectorAll(".plate-slot")].forEach((slot) => {
-    const rect = slot.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const distance = Math.hypot(centerX - x, centerY - y);
-    if (distance < nearestDistance) {
-      nearest = slot;
-      nearestDistance = distance;
-    }
-  });
-  return nearestDistance <= 56 ? nearest : null;
-}
-
-function highlightPlateSlot(x, y) {
-  const target = findDropSlot(x, y);
-  [...els.plateSlots.querySelectorAll(".plate-slot")].forEach((slot) => {
-    slot.classList.toggle("is-target", slot === target);
-  });
-}
-
-function isPointInsideElement(x, y, element) {
-  const rect = element.getBoundingClientRect();
-  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 }
 
 function updatePlateSlots() {

@@ -371,6 +371,8 @@ select:focus {
 }
 
 .plate-bank {
+  justify-content: flex-start;
+  align-content: flex-start;
   background: var(--surface-2);
   border: 1px solid var(--line);
 }
@@ -395,11 +397,6 @@ select:focus {
   border-color: #9fb0ad;
 }
 
-.plate-slot.is-target {
-  border-color: var(--blue);
-  background: #e9f1ff;
-}
-
 .plate-tile {
   display: inline-flex;
   align-items: center;
@@ -411,13 +408,8 @@ select:focus {
   font-size: 1.35rem;
   font-weight: 900;
   line-height: 1;
-  touch-action: none;
+  touch-action: manipulation;
   user-select: none;
-}
-
-.plate-tile.is-dragging {
-  opacity: 0.92;
-  transform: scale(1.04);
 }
 
 .quiz-actions {

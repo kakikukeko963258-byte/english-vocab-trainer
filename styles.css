@@ -17,6 +17,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   min-height: 100%;
   background: var(--bg);
@@ -290,6 +294,27 @@ select:focus {
   text-align: center;
 }
 
+.initial-hint {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.initial-hint span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 42px;
+  padding: 6px 14px;
+  color: var(--blue-dark);
+  background: #e9f1ff;
+  border: 1px solid #c9ddff;
+  border-radius: 8px;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
 .choice-area {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -321,6 +346,78 @@ select:focus {
   color: #ffffff;
   background: var(--red);
   border-color: var(--red);
+}
+
+.plate-area {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.plate-slots,
+.plate-bank {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  min-height: 64px;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.plate-slots {
+  background: #f8faf9;
+  border: 1px dashed #aebcb9;
+}
+
+.plate-bank {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+.plate-slot,
+.plate-tile {
+  width: 46px;
+  height: 52px;
+  border-radius: 8px;
+}
+
+.plate-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 2px dashed #c4cfcd;
+}
+
+.plate-slot.is-filled {
+  border-style: solid;
+  border-color: #9fb0ad;
+}
+
+.plate-slot.is-target {
+  border-color: var(--blue);
+  background: #e9f1ff;
+}
+
+.plate-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: var(--blue);
+  border: 1px solid var(--blue-dark);
+  box-shadow: 0 8px 18px rgba(24, 33, 38, 0.14);
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1;
+  touch-action: none;
+  user-select: none;
+}
+
+.plate-tile.is-dragging {
+  opacity: 0.92;
+  transform: scale(1.04);
 }
 
 .quiz-actions {
@@ -473,6 +570,12 @@ select:focus {
 
   .choice-area {
     grid-template-columns: 1fr;
+  }
+
+  .plate-slot,
+  .plate-tile {
+    width: 40px;
+    height: 48px;
   }
 
   .quiz-actions {

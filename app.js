@@ -13,8 +13,13 @@ const els = {
   promptLabel: document.querySelector("#promptLabel"),
   promptText: document.querySelector("#promptText"),
   typingArea: document.querySelector("#typingArea"),
+  initialHint: document.querySelector("#initialHint"),
+  initialText: document.querySelector("#initialText"),
   answerInput: document.querySelector("#answerInput"),
   choiceArea: document.querySelector("#choiceArea"),
+  plateArea: document.querySelector("#plateArea"),
+  plateSlots: document.querySelector("#plateSlots"),
+  plateBank: document.querySelector("#plateBank"),
   checkBtn: document.querySelector("#checkBtn"),
   revealBtn: document.querySelector("#revealBtn"),
   starBtn: document.querySelector("#starBtn"),
@@ -42,6 +47,7 @@ let deck = [];
 let deckIndex = 0;
 let currentDirection = "en-ja";
 let answered = false;
+let dragState = null;
 
 init();
 
@@ -176,6 +182,9 @@ function renderQuestion() {
   currentDirection = settings.direction === "mix"
     ? (Math.random() > 0.5 ? "en-ja" : "ja-en")
     : settings.direction;
+  if (settings.mode === "plates") {
+    currentDirection = "ja-en";
+  }
 
   const prompt = currentDirection === "en-ja" ? card.word : card.meanings.join(" / ");
   els.groupTag.textContent = `${card.group} #${card.id}`;
@@ -192,15 +201,29 @@ function renderQuestion() {
   renderStar();
   renderAnswerMode();
 
-  if (settings.mode === "type") {
+  if (settings.mode === "type" || settings.mode === "initial") {
     window.setTimeout(() => els.answerInput.focus(), 0);
   }
 }
 
 function renderAnswerMode() {
-  els.typingArea.hidden = settings.mode !== "type";
+  const isTypingMode = settings.mode === "type" || settings.mode === "initial";
+  els.typingArea.hidden = !isTypingMode;
+  els.initialHint.hidden = settings.mode !== "initial";
   els.choiceArea.hidden = settings.mode !== "choice";
+  els.plateArea.hidden = settings.mode !== "plates";
   els.choiceArea.innerHTML = "";
+  els.plateSlots.innerHTML = "";
+  els.plateBank.innerHTML = "";
+
+  if (settings.mode === "initial") {
+    els.initialText.textContent = firstVisibleCharacter(expectedAnswer());
+  }
+
+  if (settings.mode === "plates") {
+    renderPlateMode();
+    return;
+  }
 
   if (settings.mode !== "choice") return;
 
@@ -231,6 +254,239 @@ function buildOptions(card) {
   return shuffle([correct, ...shuffle(pool).slice(0, 3)]);
 }
 
+function expectedAnswer() {
+  const card = currentCard();
+  if (!card) return "";
+  return currentDirection === "ja-en" ? card.word : card.meanings[0];
+}
+
+function firstVisibleCharacter(value) {
+  const text = String(value).trim();
+  return text ? text[0] : "";
+}
+
+function renderPlateMode() {
+  const answer = plateTargetWord();
+  const letters = [...answer];
+  letters.forEach((_, index) => {
+    const slot = document.createElement("div");
+    slot.className = "plate-slot";
+    slot.dataset.slotIndex = String(index);
+    els.plateSlots.append(slot);
+  });
+
+  shuffle(letters.map((char, index) => ({ char, index }))).forEach((letter) => {
+    const tile = document.createElement("button");
+    tile.type = "button";
+    tile.className = "plate-tile";
+    tile.textContent = letter.char;
+    tile.dataset.char = letter.char;
+    tile.dataset.tileId = `${currentCard().id}-${letter.index}-${letter.char}`;
+    tile.addEventListener("pointerdown", startPlateDrag);
+    tile.addEventListener("click", handlePlateClick);
+    els.plateBank.append(tile);
+  });
+
+  updatePlateSlots();
+}
+
+function plateTargetWord() {
+  const card = currentCard();
+  if (!card) return "";
+  return normalizeEnglish(card.word).replace(/[^a-z0-9]/g, "");
+}
+
+function plateAnswer() {
+  return [...els.plateSlots.querySelectorAll(".plate-slot")]
+    .map((slot) => slot.querySelector(".plate-tile")?.dataset.char || "")
+    .join("");
+}
+
+function handlePlateClick(event) {
+  const tile = event.currentTarget;
+  if (answered || tile.dataset.skipClick === "true") {
+    tile.dataset.skipClick = "false";
+    return;
+  }
+
+  if (tile.parentElement?.classList.contains("plate-slot")) {
+    els.plateBank.append(tile);
+  } else {
+    const slot = [...els.plateSlots.querySelectorAll(".plate-slot")]
+      .find((item) => !item.querySelector(".plate-tile"));
+    if (slot) slot.append(tile);
+  }
+  updatePlateSlots();
+}
+
+function startPlateDrag(event) {
+  if (answered || event.button > 0) return;
+  event.preventDefault();
+
+  const tile = event.currentTarget;
+  const rect = tile.getBoundingClientRect();
+  dragState = {
+    tile,
+    originParent: tile.parentElement,
+    originNext: tile.nextSibling,
+    offsetX: event.clientX - rect.left,
+    offsetY: event.clientY - rect.top,
+    pointerId: event.pointerId,
+    moved: false
+  };
+
+  tile.classList.add("is-dragging");
+  tile.style.width = `${rect.width}px`;
+  tile.style.height = `${rect.height}px`;
+  tile.style.position = "fixed";
+  tile.style.left = `${rect.left}px`;
+  tile.style.top = `${rect.top}px`;
+  tile.style.zIndex = "1000";
+  tile.style.pointerEvents = "none";
+  document.body.append(tile);
+
+  if (tile.setPointerCapture) {
+    try {
+      tile.setPointerCapture(event.pointerId);
+    } catch {
+      // Some mobile browsers release capture when the element is reparented.
+    }
+  }
+
+  window.addEventListener("pointermove", movePlateDrag);
+  window.addEventListener("pointerup", endPlateDrag);
+  window.addEventListener("pointercancel", cancelPlateDrag);
+}
+
+function movePlateDrag(event) {
+  if (!dragState || event.pointerId !== dragState.pointerId) return;
+  dragState.moved = true;
+  const { tile, offsetX, offsetY } = dragState;
+  tile.style.left = `${event.clientX - offsetX}px`;
+  tile.style.top = `${event.clientY - offsetY}px`;
+  highlightPlateSlot(event.clientX, event.clientY);
+}
+
+function endPlateDrag(event) {
+  if (!dragState || event.pointerId !== dragState.pointerId) return;
+  const state = dragState;
+  clearPlateDragListeners();
+  clearPlateDragStyles(state.tile);
+
+  const slot = findDropSlot(event.clientX, event.clientY);
+  const bank = isPointInsideElement(event.clientX, event.clientY, els.plateBank);
+
+  if (slot) {
+    placeTileInSlot(state.tile, slot, state.originParent);
+  } else if (bank) {
+    els.plateBank.append(state.tile);
+  } else {
+    returnPlateTile(state.tile, state.originParent, state.originNext);
+  }
+
+  if (state.moved) {
+    state.tile.dataset.skipClick = "true";
+    window.setTimeout(() => {
+      state.tile.dataset.skipClick = "false";
+    }, 0);
+  }
+
+  dragState = null;
+  updatePlateSlots();
+}
+
+function cancelPlateDrag() {
+  if (!dragState) return;
+  const state = dragState;
+  clearPlateDragListeners();
+  clearPlateDragStyles(state.tile);
+  returnPlateTile(state.tile, state.originParent, state.originNext);
+  dragState = null;
+  updatePlateSlots();
+}
+
+function clearPlateDragListeners() {
+  window.removeEventListener("pointermove", movePlateDrag);
+  window.removeEventListener("pointerup", endPlateDrag);
+  window.removeEventListener("pointercancel", cancelPlateDrag);
+  [...els.plateSlots.querySelectorAll(".plate-slot")].forEach((slot) => {
+    slot.classList.remove("is-target");
+  });
+}
+
+function clearPlateDragStyles(tile) {
+  tile.classList.remove("is-dragging");
+  tile.style.width = "";
+  tile.style.height = "";
+  tile.style.position = "";
+  tile.style.left = "";
+  tile.style.top = "";
+  tile.style.zIndex = "";
+  tile.style.pointerEvents = "";
+}
+
+function returnPlateTile(tile, parent, next) {
+  if (!parent) {
+    els.plateBank.append(tile);
+    return;
+  }
+  if (next && next.parentElement === parent) {
+    parent.insertBefore(tile, next);
+  } else {
+    parent.append(tile);
+  }
+}
+
+function placeTileInSlot(tile, slot, originParent) {
+  const currentTile = slot.querySelector(".plate-tile");
+  if (currentTile && currentTile !== tile) {
+    if (originParent?.classList.contains("plate-slot") && originParent !== slot) {
+      originParent.append(currentTile);
+    } else {
+      els.plateBank.append(currentTile);
+    }
+  }
+  slot.append(tile);
+}
+
+function findDropSlot(x, y) {
+  const directSlot = document.elementsFromPoint(x, y)
+    .find((element) => element.classList?.contains("plate-slot"));
+  if (directSlot) return directSlot;
+
+  let nearest = null;
+  let nearestDistance = Infinity;
+  [...els.plateSlots.querySelectorAll(".plate-slot")].forEach((slot) => {
+    const rect = slot.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const distance = Math.hypot(centerX - x, centerY - y);
+    if (distance < nearestDistance) {
+      nearest = slot;
+      nearestDistance = distance;
+    }
+  });
+  return nearestDistance <= 56 ? nearest : null;
+}
+
+function highlightPlateSlot(x, y) {
+  const target = findDropSlot(x, y);
+  [...els.plateSlots.querySelectorAll(".plate-slot")].forEach((slot) => {
+    slot.classList.toggle("is-target", slot === target);
+  });
+}
+
+function isPointInsideElement(x, y, element) {
+  const rect = element.getBoundingClientRect();
+  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+}
+
+function updatePlateSlots() {
+  [...els.plateSlots.querySelectorAll(".plate-slot")].forEach((slot) => {
+    slot.classList.toggle("is-filled", !!slot.querySelector(".plate-tile"));
+  });
+}
+
 function checkChoice(button) {
   if (answered) return;
   const correct = isCorrect(button.dataset.answer);
@@ -251,7 +507,7 @@ function handleCheckOrNext() {
     nextQuestion();
     return;
   }
-  const answer = els.answerInput.value;
+  const answer = settings.mode === "plates" ? plateAnswer() : els.answerInput.value;
   const correct = isCorrect(answer);
   finishAnswer(correct);
 }

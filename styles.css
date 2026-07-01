@@ -446,6 +446,16 @@ select:focus {
   line-height: 1.55;
 }
 
+.example-line {
+  margin-top: 8px;
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+.example-line strong {
+  color: var(--blue-dark);
+}
+
 .note-line {
   margin-top: 5px;
   color: var(--muted);
